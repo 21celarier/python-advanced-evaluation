@@ -135,7 +135,7 @@ ici](https://nbformat.readthedocs.io/en/latest/format_description.html) :
 Le format ipynb est un dialecte du format [JSON](https://www.json.org/json-fr.html).
 Voilà un exemple de fichier JSON valide :
 
-``` js
+```js
 {
   "id": 984549706549166055,
   "text": "🔥 This is fine. 🔥",
@@ -154,7 +154,7 @@ entre de tels contenus textuels et les objets natifs de Python (dictionnaires,
 lists, chaînes de caractères, etc.). L'exemple JSON précédent serait par exemple
 converti dans le dictionnaire Python :
 
-``` python
+```python
 {'id': 984549706549166055, 'text': '🔥 This is fine. 🔥', 'isRetweet': False, 'isDeleted': False, 'favorites': 49, 'retweets': 255, 'date': '2011-08-02 18:07:48', 'isFlagged': True, 'meta': None}
 ```
 
@@ -178,7 +178,7 @@ Markdown en commentaire ; le résultat de l'exécution des cellules n'est pas pr
 en compte. Par exemple, le notebook contenu dans `samples/hello-world.ipynb`
 serait représenté dans ce format par le texte :
 
-``` python
+```python
 # %% [markdown]
 # Hello world!
 # ============
@@ -446,7 +446,7 @@ print("Hello world")
 devient:
 
 <pre>
-``` python
+```python
 print("Hello world")
 ```
 </pre>

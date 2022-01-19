@@ -4,8 +4,21 @@
 """
 an object-oriented version of the notebook toolbox
 """
+from notebook_v0 import load_ipynb
+import pprint
+import json
+import ast
 
-class CodeCell:
+
+class Cell:
+
+    def __init__(self, ipynb):
+        self.id = ipynb['id']
+        self.source = ipynb['source']
+        self.type = ipynb['cell_type']
+
+
+class CodeCell(Cell):
     r"""A Cell of Python code in a Jupyter notebook.
 
     Args:
@@ -33,9 +46,12 @@ class CodeCell:
     """
 
     def __init__(self, ipynb):
-        pass
+        super().__init__(ipynb)
+        if self.type == "code":
+            self.execution_count = ipynb['execution_count']
 
-class MarkdownCell:
+
+class MarkdownCell(Cell):
     r"""A Cell of Markdown markup in a Jupyter notebook.
 
     Args:
@@ -63,7 +79,8 @@ class MarkdownCell:
     """
 
     def __init__(self, ipynb):
-        pass
+        super().__init__(ipynb)
+
 
 class Notebook:
     r"""A Jupyter Notebook.
@@ -95,7 +112,14 @@ class Notebook:
     """
 
     def __init__(self, ipynb):
-        pass
+        self.cells = []
+        self.version = f'{ipynb["nbformat"]}' + \
+            '.' + f'{ipynb["nbformat_minor"]}'
+        for cell in ipynb['cells']:
+            if cell['cell_type'] == 'markdown':
+                self.cells.append(MarkdownCell(cell))
+            else:
+                self.cells.append(CodeCell(cell))
 
     @staticmethod
     def from_file(filename):
@@ -107,7 +131,14 @@ class Notebook:
             >>> nb.version
             '4.5'
         """
-        pass
+        with open(filename, 'r') as f:
+            string = f.read()
+            try:
+                dic = json.loads(string)
+            except:
+                dic = ast.literal_eval(string)
+
+        return Notebook(dic)
 
     def __iter__(self):
         r"""Iterate the cells of the notebook.
@@ -123,6 +154,8 @@ class Notebook:
         """
         return iter(self.cells)
 
+
+# +
 class PyPercentSerializer:
     r"""Prints a given Notebook in py-percent format.
 
@@ -144,13 +177,27 @@ class PyPercentSerializer:
             # %% [markdown]
             # Goodbye! 👋
     """
+
     def __init__(self, notebook):
-        pass
+        self.notebook = notebook
 
     def to_py_percent(self):
         r"""Converts the notebook to a string in py-percent format.
         """
-        pass
+        text = ''
+        for cell in self.notebook:
+            if cell.type == 'markdown':
+                text += '# %% [markdown]\n'
+                for line in cell.source:
+                    text += '# ' + line
+                text += '\n\n'
+            else:
+                text += '# %%\n'
+                for line in cell.source:
+                    text += line
+                text += '\n\n'
+        text = text[:-2]
+        return text
 
     def to_file(self, filename):
         r"""Serializes the notebook to a file
@@ -164,7 +211,10 @@ class PyPercentSerializer:
                 >>> s = PyPercentSerializer(nb)
                 >>> s.to_file("samples/hello-world-serialized-py-percent.py")
         """
-        pass
+        with open(filename, 'w+') as file:
+            file.write(str(self.to_py_percent()))
+
+
 class Serializer:
     r"""Serializes a Jupyter Notebook to a file.
 
@@ -199,7 +249,7 @@ class Serializer:
     """
 
     def __init__(self, notebook):
-        pass
+        self.notebook = notebook
 
     def serialize(self):
         r"""Serializes the notebook to a JSON object
@@ -207,7 +257,19 @@ class Serializer:
         Returns:
             dict: a dictionary representing the notebook.
         """
-        pass
+        dic = dict()
+        dic['cells'] = []
+        for cell in self.notebook:
+            if isinstance(cell, MarkdownCell):
+                dic['cells'].append(
+                    {'cell_type': cell.type, 'id': cell.id, 'metadata': {}, 'source': cell.source})
+            else:
+                dic['cells'].append({'cell_type': cell.type, 'execution_count': cell.execution_count,
+                                    'id': cell.id, 'metadata': {}, 'outputs': [], 'source': cell.source})
+        dic['metadata'] = {}
+        dic['nbformat'] = int(self.notebook.version[0])
+        dic['nbformat_minor'] = int(self.notebook.version[-1])
+        return dic
 
     def to_file(self, filename):
         r"""Serializes the notebook to a file
@@ -227,7 +289,12 @@ class Serializer:
                 b777420a
                 a23ab5ac
         """
-        pass
+        with open(filename, 'w+') as file:
+            file.write(str(self.serialize()))
+
+
+# -
+
 
 class Outliner:
     r"""Quickly outlines the strucure of the notebook in a readable format.
@@ -250,6 +317,7 @@ class Outliner:
                 └─▶ Markdown cell #a23ab5ac
                     | Goodbye! 👋
     """
+
     def __init__(self, notebook):
         self.notebook = notebook
 
@@ -259,4 +327,38 @@ class Outliner:
         Returns:
             str: a string representing the outline of the notebook.
         """
-        pass
+        text = f'Jupyter Notebook v{self.notebook.version}\n'
+        for cell in self.notebook:
+            text += f'└─▶ {cell.type.capitalize()} cell #{cell.id}'
+            if cell.type == 'code':
+                text += f' ({cell.execution_count})'
+            text += '\n'
+            if len(cell.source) != 1:
+                for indice, line in enumerate(cell.source):
+                    if indice == 0:
+                        text += '    ┌  '
+                    elif indice == len(cell.source) - 1:
+                        text += '    └  '
+                    else:
+                        text += '    │  '
+                    text += line
+
+            else:
+
+                text += '    | ' + cell.source[0]
+            text += '\n'
+        return text[:-1]
+nb = Notebook.from_file("samples/hello-world.ipynb")
+ppp = PyPercentSerializer(nb)
+# print(ppp.to_py_percent())
+o = Outliner(nb)
+# r"""Jupyter Notebook v4.5
+# └─▶ Markdown cell #a9541506
+#    ┌  Hello world!
+#    │  ============
+#    └  Print `Hello world!`:
+# └─▶ Code cell #b777420a (1)
+#    | print("Hello world!")
+# └─▶ Markdown cell #a23ab5ac
+#    | Goodbye! 👋""")
+o.outline()
