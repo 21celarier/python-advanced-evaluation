@@ -49,6 +49,9 @@ class CodeCell(Cell):
         super().__init__(ipynb)
         if self.type == "code":
             self.execution_count = ipynb['execution_count']
+        # zzz oui et sinon, c'est qu'il y a un problème
+        # et ce serait peut-être pas mal de le détecter avec un print
+        # ou un raise ou quelque chose qui se voit
 
 
 class MarkdownCell(Cell):
@@ -113,6 +116,8 @@ class Notebook:
 
     def __init__(self, ipynb):
         self.cells = []
+        # zzz ici c'est vraiment le moment de réutiliser get_format_version()
+        # et à nouveau vous utilisez les f-strings à contremploi
         self.version = f'{ipynb["nbformat"]}' + \
             '.' + f'{ipynb["nbformat_minor"]}'
         for cell in ipynb['cells']:
@@ -131,10 +136,14 @@ class Notebook:
             >>> nb.version
             '4.5'
         """
+        # zzz encodages: voir les commentaires communs
         with open(filename, 'r') as f:
             string = f.read()
             try:
                 dic = json.loads(string)
+            # zzz un peu comme dans notebook_v0, sauf qu'ici au moins
+            # ast.literal_eval() ça existe
+            # mais on n'en a pas du tout besoin, si ?
             except:
                 dic = ast.literal_eval(string)
 
@@ -196,6 +205,8 @@ class PyPercentSerializer:
                 for line in cell.source:
                     text += line
                 text += '\n\n'
+        # zzz ok mais fendez-vous d'un commentaire 
+        # pour nous dire pourquoi -2
         text = text[:-2]
         return text
 
@@ -211,6 +222,8 @@ class PyPercentSerializer:
                 >>> s = PyPercentSerializer(nb)
                 >>> s.to_file("samples/hello-world-serialized-py-percent.py")
         """
+        # zzz a-t-on vraiment besoin d'appeler str() ici ?
+        # si oui ça devrait être expliqué...
         with open(filename, 'w+') as file:
             file.write(str(self.to_py_percent()))
 
@@ -260,6 +273,7 @@ class Serializer:
         dic = dict()
         dic['cells'] = []
         for cell in self.notebook:
+            # zzz voir la section sur isinstance dans les commentaires communs
             if isinstance(cell, MarkdownCell):
                 dic['cells'].append(
                     {'cell_type': cell.type, 'id': cell.id, 'metadata': {}, 'source': cell.source})
@@ -267,6 +281,8 @@ class Serializer:
                 dic['cells'].append({'cell_type': cell.type, 'execution_count': cell.execution_count,
                                     'id': cell.id, 'metadata': {}, 'outputs': [], 'source': cell.source})
         dic['metadata'] = {}
+        # zzz c'est très vilain ça, ne marche pas si la version devient 10.2 ou 3.12
+        # il faut utiliser self.notebook.version.split('.')
         dic['nbformat'] = int(self.notebook.version[0])
         dic['nbformat_minor'] = int(self.notebook.version[-1])
         return dic
@@ -289,6 +305,11 @@ class Serializer:
                 b777420a
                 a23ab5ac
         """
+        # zzz alors là maintenant je comprends pourquoi vous utilisez
+        # ast.literal_eval un peu plus haut
+        # en fait ici il FAUT utiliser json.dump()
+        # et NON PAS str() qui va utiliser un format différent
+        # voyez la correction..
         with open(filename, 'w+') as file:
             file.write(str(self.serialize()))
 
@@ -348,10 +369,12 @@ class Outliner:
                 text += '    | ' + cell.source[0]
             text += '\n'
         return text[:-1]
-nb = Notebook.from_file("samples/hello-world.ipynb")
-ppp = PyPercentSerializer(nb)
+
+# zzz yet again
+#nb = Notebook.from_file("samples/hello-world.ipynb")
+#ppp = PyPercentSerializer(nb)
 # print(ppp.to_py_percent())
-o = Outliner(nb)
+#o = Outliner(nb)
 # r"""Jupyter Notebook v4.5
 # └─▶ Markdown cell #a9541506
 #    ┌  Hello world!
@@ -361,4 +384,4 @@ o = Outliner(nb)
 #    | print("Hello world!")
 # └─▶ Markdown cell #a23ab5ac
 #    | Goodbye! 👋""")
-o.outline()
+#o.outline()

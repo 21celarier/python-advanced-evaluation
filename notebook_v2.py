@@ -8,6 +8,10 @@ an object-oriented version of the notebook toolbox
 import json
 from notebook_v0 import get_format_version, get_cells
 
+# zzz voyez le corrigé et les commentaires communs
+# pour voir comment on pouvait éviter
+# d'importer ces deux classes ici
+
 from notebook_v1 import CodeCell as CodeCell_1
 from notebook_v1 import MarkdownCell as MarkdownCell_1
 
@@ -75,9 +79,10 @@ class MarkdownCell:
         self.source = source
 
 
-markdown_cell = MarkdownCell(
-    "a9541506", ["Hello world!", "============", "Print `Hello world!`:"])
-markdown_cell.source
+# zzz
+#markdown_cell = MarkdownCell(
+#    "a9541506", ["Hello world!", "============", "Print `Hello world!`:"])
+#markdown_cell.source
 
 
 # -
@@ -149,12 +154,19 @@ class NotebookLoader:
     def load(self):
         r"""Loads a Notebook instance from the file.
         """
+        # zzz ça aurait été habile de réutiliser load_ipynb
         with open(self.filename, 'r') as f:
             string = f.read()
             dic = json.loads(string)
             cells = []
             for cell in dic['cells']:
                 if cell['cell_type'] == 'markdown':
+                    # pas hyper lisible, je me suis creusé les méninges 
+                    # un moment avant de comprendre
+                    # on aurait pu écrire
+                    # v1 = MarkdownCell_1(cell)
+                    # cells.append(MarkdownCell(v1.id, v1.source))
+                    # en tous cas moi j'aurais mieux compris...
                     cells.append(MarkdownCell(MarkdownCell_1(
                         cell).id, MarkdownCell_1(cell).source))
                 else:
@@ -189,9 +201,19 @@ class Markdownizer:
     def __init__(self, notebook):
         self.notebook = notebook
 
+    # zzz
+    # ATTENTION ici vous modifiez le notebook en-place
+    # alors que l'énoncé demandait
+    # > nous générons un nouveau notebook
     def markdownize(self):
         r"""Transforms the notebook to a pure markdown notebook.
         """
+        # zzz
+        # en plus ici vous modifiez self.notebook.cells
+        # dans une boucle sur .. self.notebook.cells
+        # (puisque l'itérateur fonctionne comme cela)
+        # ce qui est une pratique interdite car dangereuse
+        # voyez le corrigé !
         for indice, cell in enumerate(self.notebook):
             if isinstance(cell, CodeCell):
                 cell.source = ['``` python', f'{cell.source}', '```']
@@ -201,13 +223,14 @@ class Markdownizer:
         return self.notebook
 
 
-nb = NotebookLoader("samples/hello-world.ipynb").load()
-nb2 = Markdownizer(nb).markdownize()
-nb2.version
-for cell in nb2:
-    print(cell.id)
+# zzz
+# nb = NotebookLoader("samples/hello-world.ipynb").load()
+# nb2 = Markdownizer(nb).markdownize()
+# nb2.version
+# for cell in nb2:
+#     print(cell.id)
 
-isinstance(nb2.cells[1], MarkdownCell)
+# isinstance(nb2.cells[1], MarkdownCell)
 
 # -
 
@@ -231,20 +254,24 @@ class MarkdownLesser:
     def __init__(self, notebook):
         self.notebook = notebook
 
+    # zzz
+    # mêmes remarques, modification en place et modification
+    # du sujet de la boucle
     def remove_markdown_cells(self):
         r"""Removes markdown cells from the notebook.
 
         Returns:
             Notebook: a Notebook instance with only code cells
         """
+        # zzz idem modification sujet de la boucle
         for indice, cell in enumerate(self.notebook):
             if isinstance(cell, MarkdownCell):
                 del self.notebook.cells[indice]
         return self.notebook
 
-
-nb = NotebookLoader("samples/hello-world.ipynb").load()
-nb2 = MarkdownLesser(nb).remove_markdown_cells()
+# zzz
+# nb = NotebookLoader("samples/hello-world.ipynb").load()
+# nb2 = MarkdownLesser(nb).remove_markdown_cells()
 
 
 # +
@@ -275,6 +302,7 @@ class PyPercentLoader:
         self.filename = filename
         self.version = version
 
+    # zzz effectivement celle-ci était un peu plus compliquée...
     def load(self):
         r"""Loads a Notebook instance from the py-percent file.
         """
@@ -282,5 +310,5 @@ class PyPercentLoader:
             string = f.read()
 
 
-nb = NotebookLoader("samples/hello-world.ipynb").load()
-
+# zzz
+# nb = NotebookLoader("samples/hello-world.ipynb").load()

@@ -50,12 +50,19 @@ def load_ipynb(filename):
          'nbformat': 4,
          'nbformat_minor': 5}
     """
+    # zzz encodages: voir les commentaires communs
     with open(filename,'r') as file :
         string = file.read()
         try:
             dic = json.loads(string)
         except:
-            dic = file.literal_eval(string)
+            # zzz
+            # ici file.literal_eval n'existe pas !
+            # ce serait plutôt sans doute ast.literal_eval ?
+            # mais c'était quoi l'idée en fait ?
+            # c'est typiquement un endroit
+            # où un commentaire serait très utile
+            DIC = file.literal_eval(string)
     return dic
 
 
@@ -81,6 +88,7 @@ def save_ipynb(ipynb, filename):
     """
     with open(filename, 'w') as file:
         json.dump(ipynb, file)
+    # zzz pas utile
     return None
 
 def get_format_version(ipynb):
@@ -99,6 +107,10 @@ def get_format_version(ipynb):
     """
     nbformat = ipynb['nbformat']
     nbformat_minor = ipynb['nbformat_minor']
+    # zzz
+    # ouch c'est vilain !
+    # ce serait quand même plus simple de faire juste
+    # return f'{nbformat}.{nbformat_minor}'
     return f'{nbformat}'+'.'+f'{nbformat_minor}'
 
 
@@ -184,7 +196,10 @@ def to_percent(ipynb):
         ...     with open(notebook_file.with_suffix(".py"), "w", encoding="utf-8") as output:
         ...         print(percent_code, file=output)
     """
-    txt =''
+    # zzz pareil ici pour les commentaires
+    # la gestion de ces \n mérite quelques mots d'explication
+    # et aussi: attention aux espaces
+    txt = ''
     for cell in ipynb['cells']:
         if cell['cell_type'] == 'markdown':
             txt += '# %% [markdown]\n'
@@ -196,6 +211,7 @@ def to_percent(ipynb):
             for line in cell['source']:
                 txt += line
             txt += '\n\n'
+    # zzz ici par exemple, on fait quoi ?
     txt = txt[:-1]
     return txt
 
@@ -255,7 +271,7 @@ def to_starboard(ipynb, html=False):
         ...     with open(notebook_file.with_suffix(".html"), "w", encoding="utf-8") as output:
         ...         print(starboard_html, file=output)
     """
-    txt =''
+    txt = ''
     for cell in ipynb['cells']:
         if cell['cell_type'] == 'markdown':
             txt += '# %% [markdown]\n'
@@ -273,8 +289,13 @@ def to_starboard(ipynb, html=False):
     else:
         return starboard_html(txt)
 
-ipynb = load_ipynb("samples/hello-world.ipynb")
-to_starboard(ipynb)
+# zzz
+# ATTENTION on l'a dit en cours, il ne FAUT PAS
+# mettre ce genre de test directement dans le code
+# mais dans un tester séparé, de sorte que la librairie
+# puisse être réutilisée !!
+#ipynb = load_ipynb("samples/hello-world.ipynb")
+#to_starboard(ipynb)
 
 
 # -
@@ -353,10 +374,14 @@ def get_stream(ipynb, stdout=True, stderr=False):
         👋 Hello world! 🌍
         🔥 This is fine. 🔥 (https://gunshowcomic.com/648)
     """
-    txt =''
+    txt = ''
+    # zzz pourquoi d'un coup cette variable s'appelle dico et pas cell ?
     for dico in ipynb['cells']:
         if dico['cell_type'] == 'code':
             for output in dico['outputs']:
+                # zzz remarquez qu'on peut alléger en faisant
+                # if stdout and output['name'] == 'stdout':
+                #     for x in ...:
                 if stdout == True:
                     if output['name'] == 'stdout':
                         for x in output['text']:
@@ -390,16 +415,21 @@ def get_exceptions(ipynb):
     """
     errors = []
     for cell in ipynb['cells']:
+        # zzz on préfèrerait tester que le type est 'code'
+        # pour le cas où un jour on ajouterait d'autres types...
         if cell['cell_type'] != 'markdown':
             for output in cell['outputs']:
                 if output['output_type'] == 'error':
+                    # zzz voir les commentaires communs au sujet de eval()
                     txt = eval(output['ename'] + '(\"' + f"{output['evalue']}" + '\")')
                     errors.append(txt)
     return errors
 
-ipynb = load_ipynb("samples/errors.ipynb")
-error = get_exceptions(ipynb)
-isinstance(error[0], Exception)
+# zzz again
+#ipynb = load_ipynb("samples/errors.ipynb")
+#error = get_exceptions(ipynb)
+# zzz en plus ici cette ligne ne sert pas à grand chose !
+#isinstance(error[0], Exception)
 
 
 # -
@@ -425,4 +455,5 @@ def get_images(ipynb):
                 ...,
                 [ 14,  13,  19]]], dtype=uint8)
     """
+    # zzz effectivement c'était une question un peu délicate
     pass
